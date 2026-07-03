@@ -10,6 +10,7 @@ plugins {
 group = 'com.noom.interview.fullstack'
 version = '0.0.1-SNAPSHOT'
 
+
 java {
 	sourceCompatibility = '17'
 }
@@ -21,11 +22,15 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
 	implementation 'org.flywaydb:flyway-core'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation platform('org.testcontainers:testcontainers-bom:1.19.8')
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
 }
 
 tasks.withType(KotlinCompile) {
@@ -39,6 +44,20 @@ tasks.named('bootBuildImage') {
 	builder = 'paketobuildpacks/builder-jammy-base:latest'
 }
 
+// Default `test` (and therefore `build`, run during the Docker image build) executes only
+// unit tests. Testcontainers-backed integration tests are tagged 'integration' and require a
+// Docker daemon, so they are excluded here and run on demand via `./gradlew integrationTest`.
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'integration'
+	}
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests (require a running Docker daemon for Testcontainers).'
+	group = 'verification'
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	shouldRunAfter tasks.named('test')
 }
