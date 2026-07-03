@@ -31,6 +31,16 @@ tasks.named('bootBuildImage') {
 	builder = 'paketobuildpacks/builder-jammy-base:latest'
 }
 
+// Some Docker engines reject docker-java's default client API version (1.32). Allow pinning it
+// for the forked test JVM via -Papi.version=... or the DOCKER_API_VERSION env var. No-op when
+// unset, so environments that negotiate the version normally are unaffected.
+tasks.withType(Test).configureEach {
+	def apiVersion = System.getenv('DOCKER_API_VERSION') ?: findProperty('api.version')
+	if (apiVersion) {
+		systemProperty 'api.version', apiVersion
+	}
+}
+
 // Default `test` (and therefore `build`, run during the Docker image build) executes only
 // unit tests. Testcontainers-backed integration tests are tagged 'integration' and require a
 // Docker daemon, so they are excluded here and run on demand via `./gradlew integrationTest`.
