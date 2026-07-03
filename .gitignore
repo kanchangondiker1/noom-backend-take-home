@@ -1,0 +1,25 @@
+# Build output
+build/
+sleep/build/
+out/
+
+# Gradle
+.gradle/
+sleep/.gradle/
+
+# Local Postgres data volume created by docker-compose (repo root only;
+# must NOT match sleep/src/main/resources/db/migration)
+/db/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# OS
+.DS_Store
+
+# Logs
+*.log
