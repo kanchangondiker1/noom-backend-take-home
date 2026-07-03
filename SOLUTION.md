@@ -5,8 +5,8 @@ fetching the latest log, and viewing multi-day averages.
 
 ## Tech choices
 
-- **Java 17 + Spring Boot 2.7** (the feature is written in Java; the provided Kotlin bootstrap
-  and `DatabaseConfiguration` are left untouched, so the build system is unchanged).
+- **Java 17 + Spring Boot 2.7**. The template shipped a small Kotlin bootstrap; it has been
+  ported to Java and the Kotlin toolchain removed, so this is a single-language Java module.
 - **PostgreSQL** with **Flyway** migrations.
 - **Spring JDBC** (`NamedParameterJdbcTemplate`) — the data access already wired up by the
   template — rather than JPA, keeping SQL explicit and the mapping obvious.
