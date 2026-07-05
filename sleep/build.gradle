@@ -1,10 +1,7 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
+	id 'java'
 	id 'org.springframework.boot' version '2.7.17'
 	id 'io.spring.dependency-management' version '1.0.15.RELEASE'
-	id 'org.jetbrains.kotlin.jvm' version '1.6.21'
-	id 'org.jetbrains.kotlin.plugin.spring' version '1.6.21'
 }
 
 group = 'com.noom.interview.fullstack'
@@ -21,24 +18,43 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-jdbc'
-	implementation 'com.fasterxml.jackson.module:jackson-module-kotlin'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	implementation 'org.flywaydb:flyway-core'
-	implementation 'org.jetbrains.kotlin:kotlin-reflect'
 	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-}
-
-tasks.withType(KotlinCompile) {
-	kotlinOptions {
-		freeCompilerArgs += '-Xjsr305=strict'
-		jvmTarget = '17'
-	}
+	testImplementation platform('org.testcontainers:testcontainers-bom:1.19.8')
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:postgresql'
 }
 
 tasks.named('bootBuildImage') {
 	builder = 'paketobuildpacks/builder-jammy-base:latest'
 }
 
+// Some Docker engines reject docker-java's default client API version (1.32). Allow pinning it
+// for the forked test JVM via -Papi.version=... or the DOCKER_API_VERSION env var. No-op when
+// unset, so environments that negotiate the version normally are unaffected.
+tasks.withType(Test).configureEach {
+	def apiVersion = System.getenv('DOCKER_API_VERSION') ?: findProperty('api.version')
+	if (apiVersion) {
+		systemProperty 'api.version', apiVersion
+	}
+}
+
+// Default `test` (and therefore `build`, run during the Docker image build) executes only
+// unit tests. Testcontainers-backed integration tests are tagged 'integration' and require a
+// Docker daemon, so they are excluded here and run on demand via `./gradlew integrationTest`.
 tasks.named('test') {
-	useJUnitPlatform()
+	useJUnitPlatform {
+		excludeTags 'integration'
+	}
+}
+
+tasks.register('integrationTest', Test) {
+	description = 'Runs integration tests (require a running Docker daemon for Testcontainers).'
+	group = 'verification'
+	useJUnitPlatform {
+		includeTags 'integration'
+	}
+	shouldRunAfter tasks.named('test')
 }
